@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Scraper - Debug Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        #result { margin-top: 20px; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+    <h1>YouTube Scraper - Debug Test</h1>
+
+    <div class="test-section">
+        <h3>Test 1: Basic Connectivity</h3>
+        <button onclick="testBasicConnectivity()">Test Flask Connection</button>
+        <div id="basic-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>Test 2: Search Functionality</h3>
+        <input type="text" id="testQuery" placeholder="Enter test query" value="test">
+        <input type="number" id="testVideos" placeholder="Number of videos" value="1">
+        <button onclick="testSearch()">Test Search</button>
+        <div id="search-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>Test 3: Progressive Loading (Frontend)</h3>
+        <button onclick="testProgressiveLoading()">Test Loading Animation</button>
+        <div id="loading-test"></div>
+    </div>
+
+    <div id="result"></div>
+
+    <script>
+        async function testBasicConnectivity() {
+            const resultDiv = document.getElementById('basic-result');
+            resultDiv.innerHTML = 'Testing...';
+
+            try {
+                const response = await fetch('/test');
+                const data = await response.json();
+
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        ✅ Success: ${response.status}<br>
+                        Response: ${JSON.stringify(data, null, 2)}
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        ❌ Error: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        async function testSearch() {
+            const resultDiv = document.getElementById('search-result');
+            const query = document.getElementById('testQuery').value;
+            const numVideos = document.getElementById('testVideos').value;
+
+            resultDiv.innerHTML = 'Searching...';
+
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+                const response = await fetch('/search', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query: query, num_videos: parseInt(numVideos) }),
+                    signal: controller.signal
+                });
+
+                clearTimeout(timeoutId);
+                const data = await response.json();
+
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            ✅ Search successful!<br>
+                            Videos found: ${data.total_videos}<br>
+                            Total comments: ${data.total_comments}<br>
+                            File saved: ${data.saved_to}
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            ❌ Search failed: ${data.error}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        ❌ Error: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        function testProgressiveLoading() {
+            const testDiv = document.getElementById('loading-test');
+
+            const messages = [
+                '🔍 Searching for videos...',
+                '📊 Processing comments...',
+                '💾 Saving data...',
+                '✅ Complete!'
+            ];
+
+            let index = 0;
+            const interval = setInterval(() => {
+                testDiv.innerHTML = `<div class="success">${messages[index]}</div>`;
+                index++;
+
+                if (index >= messages.length) {
+                    clearInterval(interval);
+                }
+            }, 1000);
+        }
+
+        // Auto-run basic connectivity test
+        window.onload = function() {
+            setTimeout(testBasicConnectivity, 1000);
+        };
+    </script>
+</body>
+</html>
